@@ -9,13 +9,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
     
+    <!-- 引入截圖必備的工具庫 -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 15px; background-color: #f2f2f7; color: #1c1c1e; margin: 0; padding-bottom: 50px; }
         h2 { text-align: center; margin-top: 10px; font-size: 22px; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .section-title { font-weight: bold; color: #007aff; margin-bottom: 15px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 8px;}
         
-        /* 動態項目的外框 */
         .item-block { border: 1px solid #e5e5ea; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fafafa; position: relative; }
         .item-header { font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #333; display: flex; justify-content: space-between; }
         .btn-remove { background: #ff3b30; color: white; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
@@ -25,213 +27,159 @@
         .flex-item { flex: 1; }
         label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 12px; color: #666; }
         input { width: 100%; padding: 8px; border: 1px solid #d1d1d6; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
-        input:focus { border-color: #007aff; outline: none; }
         
-        /* 按鈕樣式 */
         .btn-add { width: 100%; padding: 10px; background: #e5f0ff; color: #007aff; border: 1px dashed #007aff; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 10px; }
         
-        /* 明細樣式 */
+        /* 截圖區塊專屬樣式 */
+        #quote-export-area { background: white; padding: 20px; border-radius: 0; }
         .breakdown-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
-        .detail-item { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dotted #ddd; padding-bottom: 4px; }
-        .detail-name { color: #555; width: 70%; word-break: break-all; }
-        .detail-price { font-weight: bold; text-align: right; }
-        .row-total { display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px; padding-top: 8px; border-top: 2px solid #ddd; }
+        .detail-item { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dotted #ddd; padding-bottom: 6px; }
+        .detail-name { color: #333; width: 70%; word-break: break-all; font-size: 15px; }
+        .detail-price { font-weight: bold; text-align: right; font-size: 15px; }
+        .row-total { display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 2px solid #007aff; font-size: 18px; }
         
-        .cost-color { color: #d9534f; }
-        .sell-color { color: #007aff; }
-        .profit-box { background: #e6f8ec; padding: 15px; border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold; color: #28a745; margin-top: 15px;}
+        .btn-screenshot { width: 100%; padding: 12px; background: #34c759; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .profit-box { background: #fff3cd; padding: 12px; border-radius: 8px; text-align: center; font-size: 14px; color: #856404; margin-top: 10px; border: 1px solid #ffeeba; }
     </style>
 </head>
 <body>
 
-    <h2>📝 專業音響線材報價單</h2>
+    <h2>📝 音響線材報價系統</h2>
 
-    <!-- 線材區塊 -->
+    <!-- 輸入區塊 (略，同前版本) -->
     <div class="card">
         <div class="section-title">1. 線材項目</div>
         <div id="wire-container"></div>
         <button class="btn-add" onclick="addWire()">＋ 新增線材</button>
     </div>
 
-    <!-- 插頭區塊 -->
     <div class="card">
         <div class="section-title">2. 插頭項目</div>
         <div id="plug-container"></div>
         <button class="btn-add" onclick="addPlug()">＋ 新增插頭</button>
     </div>
 
-    <!-- 工費區塊 -->
     <div class="card">
         <div class="section-title">3. 工費及其他項目</div>
         <div id="labor-container"></div>
         <button class="btn-add" onclick="addLabor()">＋ 新增工費</button>
     </div>
 
-    <!-- 輸出明細區塊 -->
-    <div class="card">
-        <div class="section-title">💰 報價與成本分析</div>
+    <!-- 正式報價明細 (這是要截圖給客人的部分) -->
+    <div class="card" style="border: 2px solid #007aff;">
+        <div class="section-title">📄 正式報價單 (可截圖)</div>
         
-        <!-- 給客人的報價單 -->
-        <div class="breakdown-box">
-            <div style="font-weight:bold; margin-bottom:10px; color:#333; font-size: 16px;">【正式報價明細】</div>
+        <div id="quote-export-area">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 20px; font-weight: bold;">音響線材製作報價單</div>
+                <div id="quote-date" style="font-size: 12px; color: #888;"></div>
+            </div>
+            
             <div id="sell-list"></div>
-            <div class="row-total sell-color">
-                <span>總報價 (售價)：</span>
+            
+            <div class="row-total" style="color: #007aff;">
+                <span>應付總金額：</span>
                 <span id="total-sell-price">$0</span>
             </div>
+            <div style="font-size: 11px; color: #999; margin-top: 20px; text-align: center;">感謝您的支持，期待再次為您服務。</div>
         </div>
 
-        <!-- 自己看的成本單 -->
-        <div class="breakdown-box">
-            <div style="font-weight:bold; margin-bottom:10px; color:#333; font-size: 16px;">【內部成本核算】</div>
-            <div id="cost-list"></div>
-            <div class="row-total cost-color">
-                <span>總成本：</span>
-                <span id="total-cost-price">$0</span>
-            </div>
-        </div>
+        <button class="btn-screenshot" onclick="takeScreenshot()">📸 產生報價圖傳送</button>
+    </div>
 
-        <!-- 利潤 -->
+    <!-- 內部成本 (這部分不會被截圖進去) -->
+    <div class="card" style="background: #fdf2f2;">
+        <div class="section-title" style="color: #d9534f;">🔒 內部成本核算 (僅供自閱)</div>
+        <div id="cost-list" style="font-size: 13px; color: #666;"></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px; color: #d9534f;">
+            <span>總成本：</span>
+            <span id="total-cost-price">$0</span>
+        </div>
         <div class="profit-box">
-            預估淨利潤：<span id="total-profit">$0</span>
+            <b>預估淨利潤：<span id="total-profit">$0</span></b>
         </div>
     </div>
 
     <script>
-        // === HTML 模板產生器 ===
-
+        // (addWire, addPlug, addLabor 等函數邏輯保持不變...)
         function addWire() {
-            const html = `
-                <div class="item-block wire-item">
-                    <div class="item-header">線材設定 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div>
-                    <div class="flex-row input-group">
-                        <div class="flex-item"><label>型號</label><input type="text" class="w-model" placeholder="例: 萬隆 3220" oninput="calculate()"></div>
-                        <div class="flex-item"><label>規格</label><input type="text" class="w-spec" placeholder="例: 訊號線" oninput="calculate()"></div>
-                    </div>
-                    <div class="flex-row input-group">
-                        <div class="flex-item"><label>長度(米)</label><input type="number" class="w-len" placeholder="0" oninput="calculate()"></div>
-                        <div class="flex-item"><label>成本/米</label><input type="number" class="w-cost" placeholder="0" oninput="calculate()"></div>
-                        <div class="flex-item"><label>售價/米</label><input type="number" class="w-price" placeholder="0" oninput="calculate()"></div>
-                    </div>
-                </div>`;
+            const html = `<div class="item-block wire-item"><div class="item-header">線材 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div><div class="flex-row input-group"><div class="flex-item"><label>型號</label><input type="text" class="w-model" placeholder="型號" oninput="calculate()"></div><div class="flex-item"><label>規格</label><input type="text" class="w-spec" placeholder="規格" oninput="calculate()"></div></div><div class="flex-row input-group"><div class="flex-item"><label>長度</label><input type="number" class="w-len" oninput="calculate()"></div><div class="flex-item"><label>成本/米</label><input type="number" class="w-cost" oninput="calculate()"></div><div class="flex-item"><label>售價/米</label><input type="number" class="w-price" oninput="calculate()"></div></div></div>`;
             document.getElementById('wire-container').insertAdjacentHTML('beforeend', html);
         }
 
         function addPlug() {
-            const html = `
-                <div class="item-block plug-item">
-                    <div class="item-header">插頭設定 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div>
-                    <div class="flex-row input-group">
-                        <div class="flex-item"><label>型號</label><input type="text" class="p-model" placeholder="例: Furutech FI-50" oninput="calculate()"></div>
-                        <div class="flex-item"><label>規格</label><input type="text" class="p-spec" placeholder="例: 鍍銠" oninput="calculate()"></div>
-                    </div>
-                    <div class="flex-row input-group">
-                        <div class="flex-item"><label>數量(顆)</label><input type="number" class="p-qty" placeholder="0" oninput="calculate()"></div>
-                        <div class="flex-item"><label>成本/顆</label><input type="number" class="p-cost" placeholder="0" oninput="calculate()"></div>
-                        <div class="flex-item"><label>售價/顆</label><input type="number" class="p-price" placeholder="0" oninput="calculate()"></div>
-                    </div>
-                </div>`;
+            const html = `<div class="item-block plug-item"><div class="item-header">插頭 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div><div class="flex-row input-group"><div class="flex-item"><label>型號</label><input type="text" class="p-model" oninput="calculate()"></div><div class="flex-item"><label>規格</label><input type="text" class="p-spec" oninput="calculate()"></div></div><div class="flex-row input-group"><div class="flex-item"><label>數量</label><input type="number" class="p-qty" oninput="calculate()"></div><div class="flex-item"><label>成本</label><input type="number" class="p-cost" oninput="calculate()"></div><div class="flex-item"><label>售價</label><input type="number" class="p-price" oninput="calculate()"></div></div></div>`;
             document.getElementById('plug-container').insertAdjacentHTML('beforeend', html);
         }
 
         function addLabor() {
-            const html = `
-                <div class="item-block labor-item">
-                    <div class="item-header">工費項目 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div>
-                    <div class="input-group">
-                        <label>項目說明</label><input type="text" class="l-desc" placeholder="例: 剝線與焊接工資 (左右聲道)" oninput="calculate()">
-                    </div>
-                    <div class="flex-row input-group">
-                        <div class="flex-item"><label>自付成本(代工填0)</label><input type="number" class="l-cost" placeholder="0" oninput="calculate()"></div>
-                        <div class="flex-item"><label>向客報價</label><input type="number" class="l-price" placeholder="0" oninput="calculate()"></div>
-                    </div>
-                </div>`;
+            const html = `<div class="item-block labor-item"><div class="item-header">工費項目 <button class="btn-remove" onclick="this.parentElement.parentElement.remove(); calculate();">刪除</button></div><div class="input-group"><label>項目說明</label><input type="text" class="l-desc" oninput="calculate()"></div><div class="flex-row input-group"><div class="flex-item"><label>成本</label><input type="number" class="l-cost" oninput="calculate()"></div><div class="flex-item"><label>報價</label><input type="number" class="l-price" oninput="calculate()"></div></div></div>`;
             document.getElementById('labor-container').insertAdjacentHTML('beforeend', html);
         }
 
-
-        // === 核心計算邏輯 ===
-
         function calculate() {
-            let totalCost = 0;
-            let totalSell = 0;
-            let sellHtml = "";
-            let costHtml = "";
+            let totalCost = 0, totalSell = 0, sellHtml = "", costHtml = "";
+            let now = new Date();
+            document.getElementById('quote-date').innerText = "報價日期：" + now.toLocaleDateString();
 
-            // 1. 處理所有線材
-            document.querySelectorAll('.wire-item').forEach((item, index) => {
-                let model = item.querySelector('.w-model').value || `線材項目 ${index+1}`;
-                let spec = item.querySelector('.w-spec').value ? `(${item.querySelector('.w-spec').value})` : "";
-                let len = Number(item.querySelector('.w-len').value) || 0;
-                let cost = Number(item.querySelector('.w-cost').value) || 0;
-                let price = Number(item.querySelector('.w-price').value) || 0;
-
-                let subCost = len * cost;
-                let subPrice = len * price;
-                totalCost += subCost;
-                totalSell += subPrice;
-
-                let displayName = `[線材] ${model} ${spec} x ${len}米`;
-                if(len > 0) {
-                    sellHtml += `<div class="detail-item"><div class="detail-name">${displayName}</div><div class="detail-price">$${subPrice}</div></div>`;
-                    costHtml += `<div class="detail-item"><div class="detail-name">${displayName}</div><div class="detail-price">$${subCost}</div></div>`;
+            document.querySelectorAll('.wire-item').forEach((item) => {
+                let m = item.querySelector('.w-model').value, s = item.querySelector('.w-spec').value, l = Number(item.querySelector('.w-len').value) || 0, c = Number(item.querySelector('.w-cost').value) || 0, p = Number(item.querySelector('.w-price').value) || 0;
+                if(l > 0) {
+                    let sc = l * c, sp = l * p; totalCost += sc; totalSell += sp;
+                    let txt = `[線材] ${m} ${s} (${l}米)`;
+                    sellHtml += `<div class="detail-item"><div class="detail-name">${txt}</div><div class="detail-price">$${sp.toLocaleString()}</div></div>`;
+                    costHtml += `<div>${txt}: $${sc.toLocaleString()}</div>`;
                 }
             });
 
-            // 2. 處理所有插頭
-            document.querySelectorAll('.plug-item').forEach((item, index) => {
-                let model = item.querySelector('.p-model').value || `插頭項目 ${index+1}`;
-                let spec = item.querySelector('.p-spec').value ? `(${item.querySelector('.p-spec').value})` : "";
-                let qty = Number(item.querySelector('.p-qty').value) || 0;
-                let cost = Number(item.querySelector('.p-cost').value) || 0;
-                let price = Number(item.querySelector('.p-price').value) || 0;
-
-                let subCost = qty * cost;
-                let subPrice = qty * price;
-                totalCost += subCost;
-                totalSell += subPrice;
-
-                let displayName = `[插頭] ${model} ${spec} x ${qty}顆`;
-                if(qty > 0) {
-                    sellHtml += `<div class="detail-item"><div class="detail-name">${displayName}</div><div class="detail-price">$${subPrice}</div></div>`;
-                    costHtml += `<div class="detail-item"><div class="detail-name">${displayName}</div><div class="detail-price">$${subCost}</div></div>`;
+            document.querySelectorAll('.plug-item').forEach((item) => {
+                let m = item.querySelector('.p-model').value, s = item.querySelector('.p-spec').value, q = Number(item.querySelector('.p-qty').value) || 0, c = Number(item.querySelector('.p-cost').value) || 0, p = Number(item.querySelector('.p-price').value) || 0;
+                if(q > 0) {
+                    let sc = q * c, sp = q * p; totalCost += sc; totalSell += sp;
+                    let txt = `[插頭] ${m} ${s} (${q}顆)`;
+                    sellHtml += `<div class="detail-item"><div class="detail-name">${txt}</div><div class="detail-price">$${sp.toLocaleString()}</div></div>`;
+                    costHtml += `<div>${txt}: $${sc.toLocaleString()}</div>`;
                 }
             });
 
-            // 3. 處理所有工費
-            document.querySelectorAll('.labor-item').forEach((item, index) => {
-                let desc = item.querySelector('.l-desc').value || `工費項目 ${index+1}`;
-                let cost = Number(item.querySelector('.l-cost').value) || 0;
-                let price = Number(item.querySelector('.l-price').value) || 0;
-
-                totalCost += cost;
-                totalSell += price;
-
-                if(desc || price > 0 || cost > 0) {
-                    sellHtml += `<div class="detail-item"><div class="detail-name">[工費] ${desc}</div><div class="detail-price">$${price}</div></div>`;
-                    costHtml += `<div class="detail-item"><div class="detail-name">[工費] ${desc}</div><div class="detail-price">$${cost}</div></div>`;
+            document.querySelectorAll('.labor-item').forEach((item) => {
+                let d = item.querySelector('.l-desc').value, c = Number(item.querySelector('.l-cost').value) || 0, p = Number(item.querySelector('.l-price').value) || 0;
+                if(d || p > 0) {
+                    totalCost += c; totalSell += p;
+                    sellHtml += `<div class="detail-item"><div class="detail-name">[工費] ${d}</div><div class="detail-price">$${p.toLocaleString()}</div></div>`;
+                    costHtml += `<div>[工費] ${d}: $${c.toLocaleString()}</div>`;
                 }
             });
 
-            // 若沒有輸入任何東西時的顯示
-            if(!sellHtml) sellHtml = `<div style="color:#999; font-size:12px;">尚未新增項目</div>`;
-            if(!costHtml) costHtml = `<div style="color:#999; font-size:12px;">尚未新增項目</div>`;
-
-            // 更新 DOM
-            document.getElementById('sell-list').innerHTML = sellHtml;
-            document.getElementById('cost-list').innerHTML = costHtml;
+            document.getElementById('sell-list').innerHTML = sellHtml || "尚未加入項目";
+            document.getElementById('cost-list').innerHTML = costHtml || "尚未加入項目";
             document.getElementById('total-sell-price').innerText = "$" + totalSell.toLocaleString();
             document.getElementById('total-cost-price').innerText = "$" + totalCost.toLocaleString();
             document.getElementById('total-profit').innerText = "$" + (totalSell - totalCost).toLocaleString();
         }
 
-        // 預設先加入一組空白欄位方便使用者直接輸入
-        window.onload = () => {
-            addWire();
-            addPlug();
-            addLabor();
-        };
+        // 截圖功能邏輯
+        function takeScreenshot() {
+            const element = document.getElementById('quote-export-area');
+            html2canvas(element, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    // 嘗試自動複製到剪貼簿 (部分 iOS 版本支援)
+                    try {
+                        navigator.clipboard.write([item]);
+                        alert("報價圖已產生並複製！現在可以直接貼到 LINE 聊天視窗。");
+                    } catch (e) {
+                        // 若不支援自動複製，則開啟圖片讓使用者長按儲存
+                        const imgData = canvas.toDataURL("image/png");
+                        const newWin = window.open();
+                        newWin.document.write('<img src="' + imgData + '" style="width:100%;">');
+                        newWin.document.title = "長按圖片儲存報價單";
+                    }
+                });
+            });
+        }
 
+        window.onload = () => { addWire(); addPlug(); addLabor(); calculate(); };
     </script>
 </body>
 </html>
