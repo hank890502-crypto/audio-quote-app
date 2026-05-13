@@ -160,24 +160,44 @@
 
         // 截圖功能邏輯
         function takeScreenshot() {
-            const element = document.getElementById('quote-export-area');
-            html2canvas(element, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
-                canvas.toBlob(blob => {
-                    const item = new ClipboardItem({ "image/png": blob });
-                    // 嘗試自動複製到剪貼簿 (部分 iOS 版本支援)
-                    try {
-                        navigator.clipboard.write([item]);
-                        alert("報價圖已產生並複製！現在可以直接貼到 LINE 聊天視窗。");
-                    } catch (e) {
-                        // 若不支援自動複製，則開啟圖片讓使用者長按儲存
-                        const imgData = canvas.toDataURL("image/png");
-                        const newWin = window.open();
-                        newWin.document.write('<img src="' + imgData + '" style="width:100%;">');
-                        newWin.document.title = "長按圖片儲存報價單";
-                    }
-                });
-            });
-        }
+    const element = document.getElementById('quote-export-area');
+    
+    // 顯示「處理中」的提示，避免重複點擊
+    const btn = document.querySelector('.btn-screenshot');
+    const originalText = btn.innerText;
+    btn.innerText = "正在產生報價圖...";
+    btn.disabled = true;
+
+    html2canvas(element, { 
+        backgroundColor: "#ffffff", 
+        scale: 3, // 提高解析度，截圖會更清晰
+        useCORS: true,
+        logging: false
+    }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        
+        // 建立一個全螢幕的預覽層 (Modal)
+        const overlay = document.createElement('div');
+        overlay.id = 'image-overlay';
+        overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+        
+        overlay.innerHTML = `
+            <div style="color:white; margin-bottom:15px; font-weight:bold;">請長按下方圖片進行「拷貝」或「儲存」</div>
+            <img src="${imgData}" style="max-width:100%; max-height:70%; border-radius:8px; box-shadow:0 0 20px rgba(0,0,0,0.5);">
+            <button onclick="document.getElementById('image-overlay').remove()" style="margin-top:20px; padding:10px 30px; background:#ff3b30; color:white; border:none; border-radius:20px; font-weight:bold;">關閉預覽</button>
+        `;
+        
+        document.body.appendChild(overlay);
+
+        // 恢復按鈕狀態
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }).catch(err => {
+        alert("截圖失敗，請稍後再試");
+        btn.innerText = originalText;
+        btn.disabled = false;
+    });
+}
 
         window.onload = () => { addWire(); addPlug(); addLabor(); calculate(); };
     </script>
